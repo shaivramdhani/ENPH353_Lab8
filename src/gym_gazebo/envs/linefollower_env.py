@@ -140,8 +140,20 @@ class LineFollowerEnv(GazeboEnv):
         '''
         vel_cmd = RosTwist()
 
-        # TODO: Impelement process action.
-        
+        # set constant speed
+        vel_cmd.linear.x = 0.2
+
+        #change angular velocity depending on our action
+        if action ==0:
+            vel_cmd.angular.z = 0.5 # left
+
+        elif action ==1:
+            vel_cmd.angular.z = 0.0 
+
+        else:
+            vel_cmd.angular.z = -0.5 #right
+
+
         return vel_cmd
 
 
@@ -151,9 +163,17 @@ class LineFollowerEnv(GazeboEnv):
                a reward
         @retval reward: the reward for the current step
         '''
-        reward = 0
 
-        # TODO: Implement process reward.
+        # if the robot leaves the line we punish
+        if terminated:
+            reward = -10
+
+        #straight can have 5 points
+        elif action ==1:
+            reward = 5
+        #turning left or right has 4 points
+        else:
+            reward = 4
         
         return reward
 
@@ -174,7 +194,36 @@ class LineFollowerEnv(GazeboEnv):
         state = 0
         terminated = False
 
-        # TODO: Implement process observation
+        #grayscale image
+        gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+
+        #threshold to isolate the line
+        _, binary = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)
+
+        height, width = binary.shape
+
+        row = int(height * 0.9)
+        line_positions = np.where(binary[row,:] == 255) [0]
+
+        #check if the line is visible
+        if len(line_positions) == 0:
+            state = -1
+            terminated = True
+
+        else:
+            # find center
+            line_center = np.mean(line_positions)
+
+            #split into 3 regions
+            if line_center< width / 3:
+                state = 0
+
+            elif line_center < 2 * width / 3:
+                state = 1 
+
+            else:
+                state = 2
+
 
         return state, terminated
 

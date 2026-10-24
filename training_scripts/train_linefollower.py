@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 import random
-import gym_gazebo
+import gym_gazebo 
 import gymnasium as gym
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
+import random
 
 def main():
     writer = SummaryWriter()
@@ -48,9 +49,10 @@ def main():
 
             if total_reward > highest_reward:
                 highest_reward = total_reward
+                saveQ(q_table, "best_q_table.npy")
                 print("New highest reward: {total_reward}.")
 
-            env.reset()
+            state,_= env.reset()
             epsilon = max(0.01, epsilon * epsilon_decay)  # Decay epsilon
 
     except KeyboardInterrupt:
@@ -66,7 +68,24 @@ def learn(state, action, next_state, reward, q_table):
     alpha = 0.1
     gamma = 0.9
 
-    # TODO: Implement update Q values using the Bellman update equation
+    #Get currrent Q value 
+    current_q = q_table[state,action]
+
+    #if robot loses line
+    if next_state == -1:
+        max_next_q = 0
+
+    else:
+        #Find the highest Q value available in the next step
+        max_next_q = np.max(q_table[next_state])
+
+
+    #calculate updated q value - uses the bellman algorithm or whatever
+    new_q = current_q + alpha* (reward + gamma * max_next_q - current_q)
+
+    #Update q vable
+    q_table[state,action] = new_q
+
 
     return q_table
 
@@ -74,22 +93,33 @@ def learn(state, action, next_state, reward, q_table):
 def choose_action(state, q_table, epsilon, action_space):
     action = 0
 
-    # TODO: Implement choose action.
-    
-    return action
+    #choose a random number between 0 and 1
+    if random.random() < epsilon:
+        #Explore by choosing a random action
+        action = action_space.sample()
+
+    else:
+        #Exploititation
+
+        #find highest q value
+        max_q = np.max(q_table[state])
+
+        #find all actions that have this q value
+        best_actions = np.where(q_table[state] == max_q)[0]
+
+        #Randomly choose between equal actions
+        action = np.random.choice(best_actions)
+    return int(action)
 
 
 def saveQ(q_table, save_path):
 
-    # TODO: Implement saving the Q values
-
+    np.save(save_path,q_table)
     return
 
 def loadQ(load_path):
 
-    # TODO: Implement loading the Q values
-
-    return
+    return np.load(load_path)
 
 if __name__ == "__main__":
     main()
