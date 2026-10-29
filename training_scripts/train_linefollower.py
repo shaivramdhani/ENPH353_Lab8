@@ -65,8 +65,8 @@ def main():
 
 
 def learn(state, action, next_state, reward, q_table):
-    alpha = 0.1
-    gamma = 0.9
+    alpha = 0.1 # learning rate - how much new information changes q
+    gamma = 0.9 # discount factor - importance of future rewards
 
     #Get currrent Q value 
     current_q = q_table[state,action]
